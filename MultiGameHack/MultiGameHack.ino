@@ -37,6 +37,22 @@ void setup() {
 
 byte subgame=0;
 
+Timer newGameTimer;
+
+#define SUBGAME0_TOKEN 15
+#define SUBGAME1_TOKEN 14
+
+byte subgameToken( byte subgame_m ) {
+
+  switch (subgame_m) {
+
+    case 0: return SUBGAME0_TOKEN;
+    case 1: return SUBGAME1_TOKEN;
+    
+  }
+  
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -47,8 +63,48 @@ void loop() {
     if (subgame==SUBGAME_COUNT) {
       subgame=0;
     }
+
+    newGameTimer.set(500);
      
   }
+
+  FOREACH_FACE(f) {
+
+    if (!isValueReceivedOnFaceExpired(f) ) {
+
+      byte lastMessage = getLastValueReceivedOnFace(f);
+  
+      if ( lastMessage == SUBGAME0_TOKEN ) {
+  
+         if (subgame != 0 ) {
+          
+          subgame=0;
+          newGameTimer.set(500);
+  
+         }
+           
+      } 
+  
+      if ( lastMessage == SUBGAME1_TOKEN ) {
+  
+         if (subgame != 1 ) {
+          
+          subgame=1;
+          newGameTimer.set(500);
+  
+         }
+      } 
+    }
+  }
+
+  if (!newGameTimer.isExpired()) {
+
+    setValueSentOnAllFaces( subgameToken( subgame ) );
+    return;
+
+    
+  }
+      
 
   // Oh I know there is a better way to do with with templates... but this is whole program is a hack!
 
