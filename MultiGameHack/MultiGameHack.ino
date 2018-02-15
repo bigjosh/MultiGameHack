@@ -26,33 +26,55 @@ namespace subgame1 {
   #include "Fracture.h"  
 }
 
-#define SUBGAME_COUNT 2
+
+// Once you have inclided the subgames above, you need to add an entry for ewach one
+// one to subgames[] below that maps the loop and setup functions from that namespace
+
+struct Subgame {
+
+  void (*setup)();
+  void (*loop)();
+
+  Subgame( void (*setup_m)() , void (*loop_m)() ) { setup=setup_m; loop=loop_m; };
+  
+};
+
+Subgame subgames[] = {
+
+  Subgame( subgame0::setup , subgame0::loop ),
+  Subgame( subgame1::setup , subgame1::loop ),
+    
+};
 
 void setup() {
 
-  subgame0::setup();
-  subgame1::setup();
-
+  for( byte i=0; i< COUNT_OF( subgames ); i++ ) {
+    (subgames[i].setup)(); 
+  }
 }
 
 byte subgame=0;
 
 Timer newGameTimer;
 
-#define SUBGAME0_TOKEN 15
-#define SUBGAME1_TOKEN 14
+// Convert the subgame index into an IR code
 
-byte subgameToken( byte subgame_m ) {
-
-  switch (subgame_m) {
-
-    case 0: return SUBGAME0_TOKEN;
-    case 1: return SUBGAME1_TOKEN;
-    
-  }
-  
+byte subgame2Token( byte subgame_m ) {
+  return (31 - subgame_m );       // Hack. API should have IR_MAX_VALUE
 }
 
+byte token2Subgame( byte token ) {
+
+  return (31 - token);       // Hack. API should have IR_MAX_VALUE
+
+}
+
+
+boolean isSubgameToken( byte possibleToken  ) {
+
+  return ( possibleToken >= 31 - COUNT_OF( subgames ) );
+}
+  
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -60,7 +82,7 @@ void loop() {
 
     subgame++;
 
-    if (subgame==SUBGAME_COUNT) {
+    if (subgame==COUNT_OF( subgames ) ) {
       subgame=0;
     }
 
@@ -68,56 +90,45 @@ void loop() {
      
   }
 
+  boolean gameChangeMessageReceived = false;  
+
   FOREACH_FACE(f) {
 
     if (!isValueReceivedOnFaceExpired(f) ) {
 
       byte lastMessage = getLastValueReceivedOnFace(f);
   
-      if ( lastMessage == SUBGAME0_TOKEN ) {
-  
-         if (subgame != 0 ) {
-          
-          subgame=0;
+      if ( isSubgameToken( lastMessage ) ) {
+
+        gameChangeMessageReceived = true; 
+
+        byte receivedSubgame = token2Subgame( lastMessage );
+
+        if (receivedSubgame != subgame ) {
+                   
+          subgame=receivedSubgame;
           newGameTimer.set(500);
-  
-         }
+
+       }
            
       } 
-  
-      if ( lastMessage == SUBGAME1_TOKEN ) {
-  
-         if (subgame != 1 ) {
-          
-          subgame=1;
-          newGameTimer.set(500);
-  
-         }
-      } 
     }
+   
   }
 
   if (!newGameTimer.isExpired()) {
 
-    setValueSentOnAllFaces( subgameToken( subgame ) );
+    setValueSentOnAllFaces( subgame2Token( subgame ) );
+
+    // Don't let normal loop() run while we are changing games. 
     return;
-
     
+  }      
+
+  if (gameChangeMessageReceived) {
+    return;                         // Protect the games from ever seeing a game change value they would not understand
   }
-      
 
-  // Oh I know there is a better way to do with with templates... but this is whole program is a hack!
-
-  switch (subgame) {
-
-    case 0:  
-      subgame0::loop();
-      break;
-
-    case 1: 
-      subgame1::loop();
-      break;
-    
-  }
+  subgames[subgame].loop();
 
 }
