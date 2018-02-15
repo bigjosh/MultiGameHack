@@ -1,0 +1,9 @@
+[submodule "MultiGameHack/sub-games/mortals"]
+	path = MultiGameHack/sub-games/mortals
+	url = https://github.com/bigjosh/Mortals
+[submodule "MultiGameHack/sub-games/fracture"]
+	path = MultiGameHack/sub-games/fracture
+	url = https://github.com/bigjosh/Fracture
+[submodule "MultiGameHack/src/fracture"]
+	path = MultiGameHack/src/fracture
+	url = https://github.com/bigjosh/Fracture
